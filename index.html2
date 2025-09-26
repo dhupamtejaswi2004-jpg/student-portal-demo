@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple E‑commerce Prototype</title>
+  <style>
+    :root{--accent:#2b6cb0;--muted:#6b7280;--bg:#f6f8fb}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:var(--bg);color:#111}
+    header{background:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(15,23,42,0.06)}
+    .logo{display:flex;gap:12px;align-items:center}
+    .logo .brand{font-weight:700;color:var(--accent);font-size:18px}
+    .search{flex:1;max-width:520px;margin:0 20px}
+    .search input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb}
+    main{display:grid;grid-template-columns:270px 1fr 360px;gap:20px;padding:28px;max-width:1180px;margin:0 auto}
+    .filters{background:white;padding:18px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,0.04)}
+    .filters h3{margin:0 0 10px 0;font-size:16px}
+    .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .product{background:white;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(15,23,42,0.04)}
+    .product img{width:100%;height:160px;object-fit:cover;border-radius:8px}
+    .product .title{font-weight:600;font-size:14px}
+    .product .price{color:var(--accent);font-weight:700}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+    .btn.secondary{background:transparent;color:var(--accent);border:1px solid #cbd5e1}
+    .cart{background:white;padding:16px;border-radius:12px;box-shadow:0 1px 6px rgba(15,23,42,0.06);position:sticky;top:24px;height:calc(100vh - 64px);overflow:auto}
+    .cart h3{margin-top:0}
+    .cart .item{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eff2f7}
+    .cart .item img{width:54px;height:54px;object-fit:cover;border-radius:8px}
+    .qty{display:flex;gap:6px;align-items:center}
+    .tot{font-weight:800;font-size:18px;margin-top:14px}
+    footer{padding:20px;text-align:center;color:var(--muted)}
+    @media (max-width:980px){main{grid-template-columns:1fr;padding:16px} .cart{position:relative;height:auto;margin-top:12px}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 12h10M7 8h10M7 16h6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="brand">BlueCart</div></div>
+    <div class="search"><input id="search" placeholder="Search products, e.g. yoga mat" /></div>
+    <div style="display:flex;gap:12px;align-items:center"><button class="btn secondary" id="view-products">Products</button><button class="btn" id="open-cart">Cart (<span id="cart-count">0</span>)</button></div>
+  </header>
+
+  <main>
+    <aside class="filters">
+      <h3>Filters</h3>
+      <label><input type="checkbox" class="filter" value="wellness"/> Wellness</label><br/>
+      <label><input type="checkbox" class="filter" value="fitness"/> Fitness</label><br/>
+      <label><input type="checkbox" class="filter" value="books"/> Books</label><br/>
+      <hr style="margin:12px 0"/>
+      <h3>Sort</h3>
+      <select id="sort">
+        <option value="popular">Most popular</option>
+        <option value="low">Price: low to high</option>
+        <option value="high">Price: high to low</option>
+      </select>
+    </aside>
+
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Products</h2>
+        <div style="color:var(--muted)">Showing <span id="showing">0</span> items</div>
+      </div>
+      <div class="products" id="products"></div>
+    </section>
+
+    <aside class="cart" id="cart">
+      <h3>Your Cart</h3>
+      <div id="cart-items"></div>
+      <div class="tot">Total: ₹<span id="cart-total">0.00</span></div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn" id="checkout">Checkout</button>
+        <button class="btn secondary" id="clear-cart">Clear</button>
+      </div>
+      <hr style="margin:12px 0"/>
+      <div style="font-size:13px;color:var(--muted)">This is a front-end prototype — no payment is processed.</div>
+    </aside>
+  </main>
+
+  <footer>Made with ❤ — Simple e‑commerce prototype</footer>
+
+  <script>
+    // Sample product data
+    const PRODUCTS = [
+      {id:1,title:"Yoga Mat — Eco",price:799,tag:"wellness",img:"https://m.media-amazon.com/images/I/817n+-aD8uL.AC.jpg"},
+      {id:2,title:"Noise‑Canceling Headphones",price:3499,tag:"fitness",img:"https://m.media-amazon.com/images/I/71-TQ1oSm+L.AC_SL1500.jpg"},
+      {id:3,title:"Mindfulness Journal",price:399,tag:"books",img:"https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=60"},
+      {id:4,title:"Phone",price:1299,tag:"enjoy",img:"https://www.sammobile.com/wp-content/uploads/2023/01/Galaxy-A14-5G-14.jpg"},
+      {id:5,title:"Aromatherapy Kit",price:999,tag:"wellness",img:"https://i.etsystatic.com/5950286/r/il/ffab35/1447388004/il_fullxfull.1447388004_bpig.jpg"}
+    ];
+
+    // State
+    let cart = JSON.parse(localStorage.getItem('cart_v1') || '{}');
+
+    function saveCart(){ localStorage.setItem('cart_v1', JSON.stringify(cart)); renderCart(); }
+
+    function addToCart(id){ const p = PRODUCTS.find(x=>x.id===id); if(!p) return; if(cart[id]) cart[id].qty++; else cart[id]={...p, qty:1}; saveCart(); }
+    function removeFromCart(id){ if(!cart[id]) return; delete cart[id]; saveCart(); }
+    function changeQty(id,delta){ if(!cart[id]) return; cart[id].qty = Math.max(1, cart[id].qty + delta); saveCart(); }
+    function clearCart(){ cart = {}; saveCart(); }
+
+    function renderProducts(filterText='', filters=[], sortBy='popular'){
+      const container = document.getElementById('products'); container.innerHTML='';
+      let list = PRODUCTS.slice();
+      if(filterText) list = list.filter(p=>p.title.toLowerCase().includes(filterText.toLowerCase()));
+      if(filters.length) list = list.filter(p=>filters.includes(p.tag));
+      if(sortBy==='low') list.sort((a,b)=>a.price-b.price);
+      if(sortBy==='high') list.sort((a,b)=>b.price-a.price);
+      document.getElementById('showing').textContent = list.length;
+      list.forEach(p=>{
+        const el = document.createElement('div'); el.className='product';
+        el.innerHTML = <img src="${p.img}" alt="${p.title}"/><div class="title">${p.title}</div><div style="display:flex;justify-content:space-between;align-items:center"><div class="price">₹${p.price}</div><button class="btn" data-id="${p.id}">Add</button></div>;
+        container.appendChild(el);
+      });
+      // attach listeners
+      document.querySelectorAll('.product .btn').forEach(b=>b.addEventListener('click',()=>{ addToCart(parseInt(b.dataset.id)); updateCartCount(); }));
+    }
+
+    function renderCart(){
+      const el = document.getElementById('cart-items'); el.innerHTML='';
+      let total=0; let count=0;
+      Object.values(cart).forEach(item=>{ total += item.price*item.qty; count+=item.qty; const div = document.createElement('div'); div.className='item';
+        div.innerHTML = <img src="${item.img}"/><div style="flex:1"><div style="font-weight:700">${item.title}</div><div style="color:var(--muted)">₹${item.price} × ${item.qty}</div></div><div class="qty"><button data-op="minus" data-id="${item.id}">-</button><div style="min-width:28px;text-align:center">${item.qty}</div><button data-op="plus" data-id="${item.id}">+</button><button data-op="remove" data-id="${item.id}" style="margin-left:8px">✕</button></div>;
+        el.appendChild(div);
+      });
+      document.getElementById('cart-total').textContent = total.toFixed(2);
+      document.getElementById('cart-count').textContent = count;
+      localStorage.setItem('cart_count_v1', count);
+      // qty buttons
+      el.querySelectorAll('button[data-op]').forEach(b=>b.addEventListener('click',()=>{
+        const id = b.dataset.id; const op = b.dataset.op;
+        if(op==='minus') changeQty(id,-1);
+        if(op==='plus') changeQty(id,1);
+        if(op==='remove') removeFromCart(id);
+      }));
+    }
+
+    function updateCartCount(){ const count = Object.values(cart).reduce((s,i)=>s+i.qty,0); document.getElementById('cart-count').textContent = count; }
+
+    // init
+    document.addEventListener('DOMContentLoaded',()=>{
+      // initial render
+      renderProducts(); renderCart(); updateCartCount();
+
+      // search
+      document.getElementById('search').addEventListener('input',e=>renderProducts(e.target.value, getFilters(), document.getElementById('sort').value));
+      // filters
+      document.querySelectorAll('.filter').forEach(cb=>cb.addEventListener('change',()=>renderProducts(document.getElementById('search').value, getFilters(), document.getElementById('sort').value)));
+      document.getElementById('sort').addEventListener('change',()=>renderProducts(document.getElementById('search').value, getFilters(), document.getElementById('sort').value));
+
+      document.getElementById('clear-cart').addEventListener('click',()=>{ clearCart(); updateCartCount(); });
+      document.getElementById('open-cart').addEventListener('click',()=>{ document.getElementById('cart').scrollIntoView({behavior:'smooth'}); });
+      document.getElementById('checkout').addEventListener('click',()=>{ if(Object.keys(cart).length===0){ alert('Your cart is empty.'); return;} alert('Checkout placeholder — implement payment integration on the backend.'); });
+      document.getElementById('view-products').addEventListener('click',()=>{ window.scrollTo({top:0,behavior:'smooth'}) });
+    });
+
+    function getFilters(){ return Array.from(document.querySelectorAll('.filter:checked')).map(x=>x.value); }
+  </script>
+</body>
+</html>
